@@ -1,9 +1,10 @@
 import os
 import glob
 import warnings
-from src.ingestion import process_file
-from src.analysis import build_summary
-from src.report import export_report
+from src.extract import process_file
+from src.transform import build_summary
+from src.load import export_report
+import pandas as pd
 
 warnings.filterwarnings("ignore", category=UserWarning, module="openpyxl")
 
@@ -17,6 +18,7 @@ CITY_CODES = {
     "TOLUCA":         "tol",
     "ZACATECAS":      "zac",
 }
+
 
 DATA_FOLDERS = [
     "data_gps/dic_2021",
@@ -45,10 +47,10 @@ def main():
 
     processed = 0
     failed = 0
-
+    all_trips = []
     for f in files:
         agency = extract_city(f)
-        code   = CITY_CODES.get(agency)
+        code = CITY_CODES.get(agency)
 
         if not code:
             print(f"  SKIPPED: Unknown city '{agency}' in {os.path.basename(f)}")
@@ -58,6 +60,7 @@ def main():
         try:
             period     = os.path.basename(os.path.dirname(f))
             df_trips   = process_file(f, agency)
+            all_trips.append(df_trips)
             filename   = f"fleet_report_{code}_{period}.xlsx"
             output     = os.path.join("data_gps/output", filename)
             export_report(df_trips, output)
@@ -68,6 +71,30 @@ def main():
             failed += 1
 
     print(f"\nDone. {processed} reports saved, {failed} failed.")
+    print("\n")
+
+    # --- Build master report with all trips ---
+    if not all_trips:
+        print("No trips processed, skipping master report.")
+        return        
+    try:
+        print("Building master report...")
+        df_master = pd.concat(all_trips, ignore_index=True)
+
+        # Create a new DataFrame with unique agency-unit combinations
+        df_group_by_unit_agency = df_master[["unit", "agency"]].drop_duplicates().sort_values(["agency", "unit"])
+        df_group_by_unit_agency.reset_index(drop=True, inplace=True)
+        df_group_by_unit_agency["number_unit"] = ["UNIT-" + str(i+1).zfill(2) for i in df_group_by_unit_agency.index]
+
+        # merge the new unit numbers back to the master DataFrame
+        df_master = df_master.merge(df_group_by_unit_agency, on=["agency", "unit"], how="left")
+        df_master["unit"] = df_master["number_unit"]
+        df_master.drop(columns=["number_unit"], inplace=True)
+
+        export_report(df_master, "data_gps/output/fleet_report_master.xlsx")
+        print("  OK: fleet_report_master.xlsx")
+    except Exception as e:
+        print(f"  FAILED: Error occurred while building master report - {e}")
 
 
 if __name__ == "__main__":

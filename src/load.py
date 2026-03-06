@@ -1,6 +1,7 @@
 from openpyxl import load_workbook
 from openpyxl.styles import PatternFill
-from .ingestion import COL_DISTANCE, COL_AVG_SPEED, COL_MAX_SPEED
+from .extract import COL_DISTANCE, COL_AVG_SPEED, COL_MAX_SPEED
+from .transform import build_summary
 
 FILL_COLORS = {
     "green":  PatternFill(start_color="C6EFCE", end_color="C6EFCE", fill_type="solid"),
@@ -36,5 +37,7 @@ def export_report(df_trips, output_path):
 
     with __import__("pandas").ExcelWriter(output_path, engine="openpyxl") as writer:
         df_data.to_excel(writer, sheet_name="data", index=False)
+        business_rules = build_summary(df_trips)
+        business_rules.to_excel(writer, sheet_name="business rules", index=True)
 
     return output_path

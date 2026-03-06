@@ -9,13 +9,12 @@
   - Precio gasolina: $21 MXN/l (enero 2022)
 
   ## Alertas
-  - Inactividad > 2 horas
   - Actividad despues de 19:00 hrs a 07:00 hrs
 
   ## Limites km/mes
-  - Verde: <= 150 km/mes (5 km/dia)
-  - Amarillo: <= 300 km/mes (10 km/dia)
-  - Rojo: > 300 km/mes (>10 km/dia)
+  - Verde: < 3000 km/mes
+  - Amarillo: 3000 - 6000 km/mes
+  - Rojo: > 6000 km/mes
 
   ## Formulas combustible
   - Gasolina gastada = distancia / 17.23
