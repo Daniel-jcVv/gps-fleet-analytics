@@ -1,20 +1,11 @@
-from openpyxl import load_workbook
-from openpyxl.styles import PatternFill
 from .extract import COL_DISTANCE, COL_AVG_SPEED, COL_MAX_SPEED
-from .transform import build_summary
-
-FILL_COLORS = {
-    "green":  PatternFill(start_color="C6EFCE", end_color="C6EFCE", fill_type="solid"),
-    "yellow": PatternFill(start_color="FFEB96", end_color="FFEB9C", fill_type="solid"),
-    "red":    PatternFill(start_color="FFC7CE", end_color="FFC7CE", fill_type="solid"),
-}
 
 # Columns to include in the "data" sheet (trip-level, matches MASTER original)
 DATA_COLUMNS = [
     "agency", "unit", "date", "day", "month", "year",
     "start_time", "end_time",
     COL_DISTANCE, COL_AVG_SPEED, COL_MAX_SPEED,
-    "off_hours",
+    "off_hours", "travel_time_min", "idle_time_min"
 ]
 
 
@@ -37,25 +28,6 @@ def export_report(df_trips, output_path):
 
     with __import__("pandas").ExcelWriter(output_path, engine="openpyxl") as writer:
         df_data.to_excel(writer, sheet_name="data", index=False)
-        business_rules = build_summary(df_trips)
-        business_rules.to_excel(writer, sheet_name="business rules", index=True)
-
-    # Apply traffic light coloring to "business rules" sheet
-    wb = load_workbook(output_path)
-    ws = wb["business rules"]
-    
-    # find status column index
-    for col in range(1, ws.max_column + 1):
-        if ws.cell(row=1, column=col).value == "status":
-            status_col_num = col
-            break
-     
-    for row in range(2, ws.max_row + 1): # fila 2 hasta la ultima
-        status = ws.cell(row=row, column=status_col_num).value
-        if status in FILL_COLORS:
-            for col in range(1, ws.max_column + 1): # cada celda de la fila
-                ws.cell(row=row, column=col).fill = FILL_COLORS[status]
-
-    wb.save(output_path) # save workbook
 
     return output_path
+

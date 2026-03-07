@@ -2,8 +2,8 @@ import os
 import glob
 import warnings
 from src.extract import process_file
-from src.transform import build_summary
 from src.load import export_report
+from src.database import create_connection, load_trips
 import pandas as pd
 
 warnings.filterwarnings("ignore", category=UserWarning, module="openpyxl")
@@ -73,6 +73,8 @@ def main():
     print(f"\nDone. {processed} reports saved, {failed} failed.")
     print("\n")
 
+    db_path = "data_gps/fleet.db"
+
     # --- Build master report with all trips ---
     if not all_trips:
         print("No trips processed, skipping master report.")
@@ -93,6 +95,13 @@ def main():
 
         export_report(df_master, "data_gps/output/fleet_report_master.xlsx")
         print("  OK: fleet_report_master.xlsx")
+
+        # connection to database sqlite
+        conn = create_connection(db_path)
+        load_trips(conn, df_master)
+        conn.close()
+        print("  OK: fleet.db")
+
     except Exception as e:
         print(f"  FAILED: Error occurred while building master report - {e}")
 

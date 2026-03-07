@@ -12,6 +12,7 @@ COL_MAX_SPEED = "Max. velocidad,\nkm/h"
 COL_START     = "Inicio de movimiento"
 COL_END       = "Final de movimiento"
 
+
 # Spanish month abbreviations → month number
 MONTHS_ES = {
     "ene": "01", "feb": "02", "mar": "03", "abr": "04",
@@ -23,7 +24,6 @@ MONTHS_ES = {
 def _extract_time_string(col):
     """Extract 'HH:MM' from strings like '10:29 - Calle Villas...'"""
     return col.str.split(" - ").str[0]
-
 
 
 def process_file(file_path, agency):
@@ -69,6 +69,12 @@ def process_file(file_path, agency):
         start_h = pd.to_datetime(df["start_time"], format="mixed").dt.hour
         end_h   = pd.to_datetime(df["end_time"],   format="mixed").dt.hour
         df["off_hours"] = ((start_h >= 19) | (end_h <= 5)).map({True: "yes", False: "no"})
+
+        # --- convertion timedelta to minutes after read the raw
+        df["travel_time_min"] = df["Tiempo de viaje"] / pd.Timedelta(minutes=1)
+        df["idle_time_min"] = df["Tiempo de inactividad"] / pd.Timedelta(minutes=1)
+
+
 
         # --- Identity columns ---
         df["unit"]   = sheet  # anonymized (UNIT-XX)
