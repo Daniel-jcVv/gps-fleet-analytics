@@ -40,4 +40,22 @@ def export_report(df_trips, output_path):
         business_rules = build_summary(df_trips)
         business_rules.to_excel(writer, sheet_name="business rules", index=True)
 
+    # Apply traffic light coloring to "business rules" sheet
+    wb = load_workbook(output_path)
+    ws = wb["business rules"]
+    
+    # find status column index
+    for col in range(1, ws.max_column + 1):
+        if ws.cell(row=1, column=col).value == "status":
+            status_col_num = col
+            break
+     
+    for row in range(2, ws.max_row + 1): # fila 2 hasta la ultima
+        status = ws.cell(row=row, column=status_col_num).value
+        if status in FILL_COLORS:
+            for col in range(1, ws.max_column + 1): # cada celda de la fila
+                ws.cell(row=row, column=col).fill = FILL_COLORS[status]
+
+    wb.save(output_path) # save workbook
+
     return output_path
