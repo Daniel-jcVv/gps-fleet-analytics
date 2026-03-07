@@ -1,3 +1,4 @@
+import pandas as pd
 from .extract import COL_DISTANCE, COL_AVG_SPEED, COL_MAX_SPEED, FUEL_EFFICIENCY_KM_PER_LITER, FUEL_PRICE_PER_LITER
 
 
@@ -48,3 +49,14 @@ def build_summary(df):
     summary["status"] = summary["distance_km"].apply(traffic_light)
 
     return summary.sort_values("cost", ascending=False)
+
+
+def renumber_units(df):
+    """Assign unique UNIT-XX numbers across all agencies."""
+    lookup = df[["unit", "agency"]].drop_duplicates().sort_values(["agency", "unit"])
+    lookup = lookup.reset_index(drop=True)
+    lookup["number_unit"] = ["UNIT-" + str(i + 1).zfill(2) for i in lookup.index]
+    df = df.merge(lookup, on=["agency", "unit"], how="left")
+    df["unit"] = df["number_unit"]
+    df.drop(columns=["number_unit"], inplace=True)
+    return df

@@ -1,3 +1,5 @@
+import os
+import glob
 import pandas as pd
 from openpyxl import load_workbook
 
@@ -12,6 +14,22 @@ COL_MAX_SPEED = "Max. velocidad,\nkm/h"
 COL_START     = "Inicio de movimiento"
 COL_END       = "Final de movimiento"
 
+# City name → short code
+CITY_CODES = {
+    "AGUASCALIENTES": "ags",
+    "CELAYA":         "cel",
+    "QUERETARO":      "qro",
+    "SAN JUAN":       "snjuan",
+    "SILAO":          "silao",
+    "S.L.P.":         "slp",
+    "TOLUCA":         "tol",
+    "ZACATECAS":      "zac",
+}
+
+DATA_FOLDERS = [
+    "data_gps/dic_2021",
+    "data_gps/ene_2022",
+]
 
 # Spanish month abbreviations → month number
 MONTHS_ES = {
@@ -19,6 +37,22 @@ MONTHS_ES = {
     "may": "05", "jun": "06", "jul": "07", "ago": "08",
     "sep": "09", "oct": "10", "nov": "11", "dic": "12",
 }
+
+
+def extract_city(file_path):
+    """Extract city name from filename. Handles 'VOLVO CITY-MES' and 'CITY-MES' formats."""
+    name = os.path.basename(file_path).replace("VOLVO ", "")
+    for suffix in ["-DIC 2021", "  DIC 2021", "-ENERO 2022", ".ENERO 2022", "- ENERO 2022"]:
+        name = name.replace(suffix, "")
+    return name.replace(".xlsx", "").strip()
+
+
+def find_files():
+    """Find all raw Excel files in DATA_FOLDERS."""
+    files = []
+    for folder in DATA_FOLDERS:
+        files += glob.glob(os.path.join(folder, "*.xlsx"))
+    return files
 
 
 def _extract_time_string(col):
