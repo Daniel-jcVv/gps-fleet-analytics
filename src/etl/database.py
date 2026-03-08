@@ -1,14 +1,15 @@
 import sqlite3
 import pandas as pd
 
-# open/create .db and return conn
-def create_connection(db_path):
+DB_PATH = "data_gps/fleet.db"
+
+
+def create_connection(db_path=DB_PATH):
     conn = sqlite3.connect(db_path)
     return conn
 
 
 def load_trips(conn, df):
-
     conn.cursor().execute("""
         CREATE TABLE IF NOT EXISTS trips (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -44,6 +45,8 @@ def load_trips(conn, df):
     df = df[cols]
     df["date"] = df["date"].astype(str)
 
+    conn.cursor().execute("DELETE FROM trips")
+    conn.commit()
     df.to_sql("trips", conn, if_exists="append", index=False)
 
 

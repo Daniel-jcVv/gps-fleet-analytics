@@ -4,12 +4,10 @@ from .extract import COL_DISTANCE, COL_AVG_SPEED, COL_MAX_SPEED, FUEL_EFFICIENCY
 
 def convert_to_01(df, col):
     """Convert 'yes'/'no' to 1/0 in specified column."""
-    # check if column have int values, if not convert to 01
     if df[col].dtype in (int, float):
         return df
-    else:   
-        df[col] = df[col].str.strip().str.lower().map({"yes": 1, "no": 0})
-        return df
+    df[col] = df[col].str.strip().str.lower().map({"yes": 1, "no": 0})
+    return df
 
 
 def build_summary(df):
@@ -28,11 +26,9 @@ def build_summary(df):
     # Fuel metrics
     summary["liters"] = summary["distance_km"] / FUEL_EFFICIENCY_KM_PER_LITER
     summary["cost"] = summary["liters"] * FUEL_PRICE_PER_LITER
-    summary["agency"] = df.groupby("unit")["agency"].first() # get agency name for each unit (assuming it's consistent per unit)
-
-    # fit position of agent column to first column
-    agency = summary.pop("agency") # remove agency if exists, otherwise return None
-    summary.insert(0, "agency", agency) # insert agency back to first column 
+    summary["agency"] = df.groupby("unit")["agency"].first()
+    agency = summary.pop("agency")
+    summary.insert(0, "agency", agency)
 
     # Night metrics
     df_night = df[df["off_hours"] == 1]

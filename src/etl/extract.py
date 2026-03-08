@@ -3,9 +3,9 @@ import glob
 import pandas as pd
 from openpyxl import load_workbook
 
-# Constants (source: BUSINESS_RULES.md)
+# Constants (source: docs/BUSINESS_RULES.md)
 FUEL_EFFICIENCY_KM_PER_LITER = 17.23
-FUEL_PRICE_PER_LITER = 21
+FUEL_PRICE_PER_LITER = 23.24
 
 # Raw column names
 COL_DISTANCE  = "Distancia recorrida total,\nkm"
@@ -104,11 +104,9 @@ def process_file(file_path, agency):
         end_h   = pd.to_datetime(df["end_time"],   format="mixed").dt.hour
         df["off_hours"] = ((start_h >= 19) | (end_h <= 5)).map({True: "yes", False: "no"})
 
-        # --- convertion timedelta to minutes after read the raw
+        # --- Convert timedelta to minutes ---
         df["travel_time_min"] = df["Tiempo de viaje"] / pd.Timedelta(minutes=1)
         df["idle_time_min"] = df["Tiempo de inactividad"] / pd.Timedelta(minutes=1)
-
-
 
         # --- Identity columns ---
         df["unit"]   = sheet  # anonymized (UNIT-XX)

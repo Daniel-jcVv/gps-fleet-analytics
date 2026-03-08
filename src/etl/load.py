@@ -1,3 +1,4 @@
+import pandas as pd
 from .extract import COL_DISTANCE, COL_AVG_SPEED, COL_MAX_SPEED
 
 # Columns to include in the "data" sheet (trip-level, matches MASTER original)
@@ -26,7 +27,7 @@ def export_report(df_trips, output_path):
         lambda d: d.strftime("%d/%m/%Y") if hasattr(d, "strftime") else d
     )
 
-    with __import__("pandas").ExcelWriter(output_path, engine="openpyxl") as writer:
+    with pd.ExcelWriter(output_path, engine="openpyxl") as writer:
         df_data.to_excel(writer, sheet_name="data", index=False)
 
     return output_path
