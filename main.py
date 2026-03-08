@@ -1,13 +1,12 @@
 import os
 import warnings
 import pandas as pd
-from src.extract import process_file, extract_city, find_files, CITY_CODES
-from src.transform import renumber_units
-from src.load import export_report
-from src.database import create_connection, load_trips
+from src.etl.extract import process_file, extract_city, find_files, CITY_CODES
+from src.etl.transform import renumber_units
+from src.etl.load import export_report
+from src.etl.database import create_connection, load_trips
 
 warnings.filterwarnings("ignore", category=UserWarning, module="openpyxl")
-
 
 def main():
     os.makedirs("data_gps/output", exist_ok=True)
@@ -56,7 +55,7 @@ def main():
         export_report(df_master, "data_gps/output/fleet_report_master.xlsx")
         print("  OK: fleet_report_master.xlsx")
 
-        conn = create_connection("data_gps/fleet.db")
+        conn = create_connection()
         load_trips(conn, df_master)
         conn.close()
         print("  OK: fleet.db")
