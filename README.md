@@ -1,5 +1,7 @@
 # GPS Fleet Analytics
 
+[**Live Demo**](https://gps-fleet-analytics-dqesp3gahbawkw3fgxyusv.streamlit.app/)
+
 Python ETL pipeline that automates raw GPS Excel processing into a queryable SQLite database and a Streamlit dashboard — with AI chat to explore your data in plain Spanish.
 
 ![Dashboard](docs/screenshots/Screenshot_20260308_155613.png)
@@ -23,7 +25,7 @@ Python 3.12 | pandas | openpyxl | SQLite | Streamlit | Plotly | Groq
 ## Quick start
 
 ```bash
-git clone https://github.com/your-user/gps-fleet-analytics.git
+git clone https://github.com/Daniel-jcVv/gps-fleet-analytics.git
 cd gps-fleet-analytics
 bash setup.sh           # Creates venv, installs deps, runs ETL
 source venv/bin/activate
