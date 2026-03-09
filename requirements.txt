@@ -4,3 +4,4 @@ streamlit>=1.30
 groq>=0.4
 plotly>=5.18
 python-dotenv>=1.0
+matplotlib>=3.8
