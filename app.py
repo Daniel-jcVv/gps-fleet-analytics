@@ -12,6 +12,10 @@ from src.dashboard.queries import (
 
 load_dotenv()
 
+# Streamlit Cloud stores secrets in st.secrets, not .env
+if "GROQ_API_KEY" in st.secrets and not os.getenv("GROQ_API_KEY"):
+    os.environ["GROQ_API_KEY"] = st.secrets["GROQ_API_KEY"]
+
 
 # --- Page config ---
 st.set_page_config(
@@ -50,7 +54,12 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-ensure_db()
+try:
+    ensure_db()
+except Exception as e:
+    st.error(f"Error building database: {e}")
+    st.stop()
+
 conn = create_connection()
 
 try:

@@ -5,7 +5,13 @@ import pandas as pd
 
 logger = logging.getLogger(__name__)
 
-DB_PATH = os.getenv("GPS_DB_PATH", "data_gps/fleet.db")
+def _default_db_path() -> str:
+    """Use /tmp on Streamlit Cloud (read-only filesystem), local path otherwise."""
+    if os.getenv("STREAMLIT_SERVER_HEADLESS"):
+        return "/tmp/fleet.db"
+    return "data_gps/fleet.db"
+
+DB_PATH = os.getenv("GPS_DB_PATH", _default_db_path())
 
 
 def create_connection(db_path: str = DB_PATH) -> sqlite3.Connection:
