@@ -39,18 +39,26 @@ Rules:
 - The user writes in Spanish."""
 
 
-def ask_groq(user_question):
+def ask_groq(user_question: str) -> dict[str, str]:
     """Send user question to Groq, get back SQL + brief answer."""
-    client = Groq(api_key=os.getenv("GROQ_API_KEY"))
-    response = client.chat.completions.create(
-        model=GROQ_MODEL,
-        messages=[
-            {"role": "system", "content": SYSTEM_PROMPT},
-            {"role": "user", "content": user_question},
-        ],
-        temperature=0,
-        max_tokens=500,
-    )
+    api_key = os.getenv("GROQ_API_KEY")
+    if not api_key:
+        return {"sql": "", "answer": "Error: GROQ_API_KEY no esta configurada."}
+
+    client = Groq(api_key=api_key)
+    try:
+        response = client.chat.completions.create(
+            model=GROQ_MODEL,
+            messages=[
+                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "user", "content": user_question},
+            ],
+            temperature=0,
+            max_tokens=500,
+        )
+    except Exception as e:
+        return {"sql": "", "answer": f"Error al conectar con Groq: {e}"}
+
     raw = response.choices[0].message.content.strip()
     try:
         return json.loads(raw)

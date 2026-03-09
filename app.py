@@ -1,7 +1,8 @@
+import os
 import streamlit as st
 import pandas as pd
 from dotenv import load_dotenv
-from src.etl.database import create_connection
+from src.etl.database import create_connection, ensure_db
 from src.dashboard.charts import make_chart
 from src.dashboard.chat import ask_groq
 from src.dashboard.queries import (
@@ -49,112 +50,121 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
+ensure_db()
 conn = create_connection()
 
-# --- Header ---
-st.title("GPS Fleet Analytics")
-st.subheader("Analisis de datos de GPS de unidades de transporte")
+try:
+    # --- Header ---
+    st.title("GPS Fleet Analytics")
+    st.subheader("Analisis de datos de GPS de unidades de transporte")
 
-# --- Filters ---
-all_agencies = get_agencies(conn)
+    # --- Filters ---
+    all_agencies = get_agencies(conn)
 
-f1, f2, f3 = st.columns(3)
-with f1:
-    sel_agencies = st.multiselect("Agencia", all_agencies, default=[], placeholder="Todas")
-with f2:
-    sel_months = st.multiselect("Mes", ["December", "January"], default=[], placeholder="Todos")
-with f3:
-    sel_horario = st.selectbox("Horario", ["Todos", "Dentro de horario", "Fuera de horario"])
+    f1, f2, f3 = st.columns(3)
+    with f1:
+        sel_agencies = st.multiselect("Agencia", all_agencies, default=[], placeholder="Todas")
+    with f2:
+        sel_months = st.multiselect("Mes", ["December", "January"], default=[], placeholder="Todos")
+    with f3:
+        sel_horario = st.selectbox("Horario", ["Todos", "Dentro de horario", "Fuera de horario"])
 
-where, params = build_where(sel_agencies, sel_months, sel_horario)
+    where, params = build_where(sel_agencies, sel_months, sel_horario)
 
-# --- KPI cards ---
-kpis = get_kpis(conn, where, params)
+    # --- KPI cards ---
+    kpis = get_kpis(conn, where, params)
 
-c1, c2, c3, c4, c5 = st.columns(5)
-c1.metric("Costo Total", f"${int(kpis['total_cost'][0] or 0):,}")
-c2.metric("Costo Fuera de Horario", f"${int(kpis['off_hours_cost'][0] or 0):,}")
-c3.metric("Litros Consumidos", f"{int(kpis['total_liters'][0] or 0):,}")
-c4.metric("Costo Promedio / Unidad", f"${int(kpis['cost_per_unit'][0] or 0):,}")
-c5.metric("Costo Promedio / Viaje", f"${float(kpis['cost_per_trip'][0] or 0):,.2f}")
+    c1, c2, c3, c4, c5 = st.columns(5)
+    c1.metric("Costo Total", f"${int(kpis['total_cost'][0] or 0):,}")
+    c2.metric("Costo Fuera de Horario", f"${int(kpis['off_hours_cost'][0] or 0):,}")
+    c3.metric("Litros Consumidos", f"{int(kpis['total_liters'][0] or 0):,}")
+    c4.metric("Costo Promedio / Unidad", f"${int(kpis['cost_per_unit'][0] or 0):,}")
+    c5.metric("Costo Promedio / Viaje", f"${float(kpis['cost_per_trip'][0] or 0):,.2f}")
 
-# --- Chart data (filtered) ---
-chart_data = {
-    "bar_h": get_cost_by_agency(conn, where, params),
-    "donut": get_off_hours_by_agency(conn, where, params),
-    "heatmap": get_idle_heatmap(conn, where, params),
-    "line": get_daily_cost_trend(conn, where, params),
-}
-chart_titles = {
-    "bar_h": "Costo de Combustible por Agencia",
-    "donut": "Viajes Fuera de Horario por Agencia",
-    "heatmap": "Inactividad por Agencia y Dia (horas)",
-    "line": "Tendencia Diaria de Costo de Combustible",
-}
+    # --- Chart data (filtered) ---
+    chart_data = {
+        "bar_h": get_cost_by_agency(conn, where, params),
+        "donut": get_off_hours_by_agency(conn, where, params),
+        "heatmap": get_idle_heatmap(conn, where, params),
+        "line": get_daily_cost_trend(conn, where, params),
+    }
+    chart_titles = {
+        "bar_h": "Costo de Combustible por Agencia",
+        "donut": "Viajes Fuera de Horario por Agencia",
+        "heatmap": "Inactividad por Agencia y Dia (horas)",
+        "line": "Tendencia Diaria de Costo de Combustible",
+    }
 
-# --- 4 charts in 2x2 grid ---
-row1_left, row1_right = st.columns(2)
-row2_left, row2_right = st.columns(2)
+    # --- 4 charts in 2x2 grid ---
+    row1_left, row1_right = st.columns(2)
+    row2_left, row2_right = st.columns(2)
 
-with row1_left:
-    fig1 = make_chart(chart_data["bar_h"], "bar_h", chart_titles["bar_h"])
-    if fig1:
-        st.plotly_chart(fig1, width="stretch")
+    with row1_left:
+        fig1 = make_chart(chart_data["bar_h"], "bar_h", chart_titles["bar_h"])
+        if fig1:
+            st.plotly_chart(fig1, width="stretch")
 
-with row1_right:
-    fig2 = make_chart(chart_data["donut"], "donut", chart_titles["donut"])
-    if fig2:
-        st.plotly_chart(fig2, width="stretch")
+    with row1_right:
+        fig2 = make_chart(chart_data["donut"], "donut", chart_titles["donut"])
+        if fig2:
+            st.plotly_chart(fig2, width="stretch")
 
-with row2_left:
-    fig3 = make_chart(chart_data["heatmap"], "heatmap", chart_titles["heatmap"])
-    if fig3:
-        st.plotly_chart(fig3, width="stretch")
+    with row2_left:
+        fig3 = make_chart(chart_data["heatmap"], "heatmap", chart_titles["heatmap"])
+        if fig3:
+            st.plotly_chart(fig3, width="stretch")
 
-with row2_right:
-    fig4 = make_chart(chart_data["line"], "line", chart_titles["line"])
-    if fig4:
-        st.plotly_chart(fig4, width="stretch")
+    with row2_right:
+        fig4 = make_chart(chart_data["line"], "line", chart_titles["line"])
+        if fig4:
+            st.plotly_chart(fig4, width="stretch")
 
-# --- Chat panel (sidebar) ---
-if "messages" not in st.session_state:
-    st.session_state.messages = []
+    # --- Chat panel (sidebar) ---
+    has_api_key = bool(os.getenv("GROQ_API_KEY"))
 
-with st.sidebar:
-    st.header("Chat con tus datos")
-    st.caption('Pregunta en espanol. Ej: "Top 10 unidades mas caras"')
+    if "messages" not in st.session_state:
+        st.session_state.messages = []
 
-    for msg in st.session_state.messages:
-        with st.chat_message(msg["role"]):
-            st.write(msg["text"])
-            if "df" in msg:
-                st.dataframe(msg["df"], hide_index=True)
+    with st.sidebar:
+        st.header("Chatea con tus datos")
 
-    if prompt := st.chat_input("Escribe tu pregunta..."):
-        st.session_state.messages.append(
-            {"role": "user", "text": prompt}
-        )
-
-        result = ask_groq(prompt)
-        sql = result.get("sql", "")
-        answer = result.get("answer", "")
-
-        if not sql:
-            st.session_state.messages.append(
-                {"role": "assistant", "text": answer}
-            )
+        if not has_api_key:
+            st.warning("GROQ_API_KEY no configurada. El chat no esta disponible.")
         else:
-            try:
-                df_result = pd.read_sql(sql, conn)
-                msg_data = {"role": "assistant", "text": answer}
-                if not df_result.empty:
-                    msg_data["df"] = df_result
-                st.session_state.messages.append(msg_data)
-            except Exception as e:
+            st.caption('Pregunta en espanol. Ej: "Top 10 unidades mas caras"')
+
+            for msg in st.session_state.messages:
+                with st.chat_message(msg["role"]):
+                    st.write(msg["text"])
+                    if "df" in msg:
+                        st.dataframe(msg["df"], hide_index=True)
+
+            if prompt := st.chat_input("Escribe tu pregunta..."):
                 st.session_state.messages.append(
-                    {"role": "assistant", "text": f"Error: {e}"}
+                    {"role": "user", "text": prompt}
                 )
 
-        st.rerun()
+                result = ask_groq(prompt)
+                sql = result.get("sql", "")
+                answer = result.get("answer", "")
 
-conn.close()
+                if not sql:
+                    st.session_state.messages.append(
+                        {"role": "assistant", "text": answer}
+                    )
+                else:
+                    try:
+                        df_result = pd.read_sql(sql, conn)
+                        msg_data = {"role": "assistant", "text": answer}
+                        if not df_result.empty:
+                            msg_data["df"] = df_result
+                        st.session_state.messages.append(msg_data)
+                    except Exception as e:
+                        st.session_state.messages.append(
+                            {"role": "assistant", "text": f"Error en consulta SQL: {e}"}
+                        )
+
+                st.rerun()
+
+finally:
+    conn.close()

@@ -1,3 +1,4 @@
+import sqlite3
 import pandas as pd
 from src.etl.extract import FUEL_EFFICIENCY_KM_PER_LITER, FUEL_PRICE_PER_LITER
 
@@ -5,10 +6,14 @@ FE = FUEL_EFFICIENCY_KM_PER_LITER
 FP = FUEL_PRICE_PER_LITER
 
 
-def build_where(sel_agencies, sel_months, sel_horario):
+def build_where(
+    sel_agencies: list[str],
+    sel_months: list[str],
+    sel_horario: str,
+) -> tuple[str, list[str]]:
     """Build WHERE clause and params from filter selections."""
-    clauses = []
-    params = []
+    clauses: list[str] = []
+    params: list[str] = []
     if sel_agencies:
         placeholders = ",".join("?" for _ in sel_agencies)
         clauses.append(f"agency IN ({placeholders})")
@@ -25,14 +30,18 @@ def build_where(sel_agencies, sel_months, sel_horario):
     return where, params
 
 
-def get_agencies(conn):
+def get_agencies(conn: sqlite3.Connection) -> list[str]:
     """Return sorted list of unique agencies."""
     return pd.read_sql(
         "SELECT DISTINCT agency FROM trips ORDER BY agency", conn
     )["agency"].tolist()
 
 
-def get_kpis(conn, where="", params=None):
+def get_kpis(
+    conn: sqlite3.Connection,
+    where: str = "",
+    params: list[str] | None = None,
+) -> pd.DataFrame:
     """Return KPI metrics filtered by where clause."""
     return pd.read_sql(f"""
         SELECT
@@ -45,7 +54,11 @@ def get_kpis(conn, where="", params=None):
     """, conn, params=params)
 
 
-def get_cost_by_agency(conn, where="", params=None):
+def get_cost_by_agency(
+    conn: sqlite3.Connection,
+    where: str = "",
+    params: list[str] | None = None,
+) -> pd.DataFrame:
     return pd.read_sql(f"""
         SELECT REPLACE(agency, 'AGUASCALIENTES', 'AGS') AS Agencia,
             ROUND((SUM(distance_km) / {FE}) * {FP}, 0) AS 'Costo MXN'
@@ -53,7 +66,11 @@ def get_cost_by_agency(conn, where="", params=None):
     """, conn, params=params)
 
 
-def get_off_hours_by_agency(conn, where="", params=None):
+def get_off_hours_by_agency(
+    conn: sqlite3.Connection,
+    where: str = "",
+    params: list[str] | None = None,
+) -> pd.DataFrame:
     return pd.read_sql(f"""
         SELECT REPLACE(agency, 'AGUASCALIENTES', 'AGS') AS Agencia,
             COUNT(*) AS Viajes
@@ -62,7 +79,11 @@ def get_off_hours_by_agency(conn, where="", params=None):
     """, conn, params=params)
 
 
-def get_idle_heatmap(conn, where="", params=None):
+def get_idle_heatmap(
+    conn: sqlite3.Connection,
+    where: str = "",
+    params: list[str] | None = None,
+) -> pd.DataFrame:
     return pd.read_sql(f"""
         SELECT REPLACE(agency, 'AGUASCALIENTES', 'AGS') AS Agencia, day AS Dia,
             ROUND(SUM(idle_time_min) / 60, 0) AS Horas
@@ -70,7 +91,11 @@ def get_idle_heatmap(conn, where="", params=None):
     """, conn, params=params)
 
 
-def get_daily_cost_trend(conn, where="", params=None):
+def get_daily_cost_trend(
+    conn: sqlite3.Connection,
+    where: str = "",
+    params: list[str] | None = None,
+) -> pd.DataFrame:
     return pd.read_sql(f"""
         SELECT date AS Fecha, month AS Mes,
             ROUND((SUM(distance_km) / {FE}) * {FP}, 0) AS 'Costo MXN'

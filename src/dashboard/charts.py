@@ -1,5 +1,6 @@
 import pandas as pd
 import plotly.express as px
+import plotly.graph_objects as go
 
 MAX_CHART_ROWS = 15
 
@@ -15,14 +16,14 @@ AGENCY_COLORS = {
 }
 
 
-def cap_rows(df, limit=MAX_CHART_ROWS):
+def cap_rows(df: pd.DataFrame, limit: int = MAX_CHART_ROWS) -> pd.DataFrame:
     """Limit DataFrame to max rows for clean charts."""
     if len(df) > limit:
         return df.head(limit)
     return df
 
 
-def make_chart(df, chart_type="bar_h", title=""):
+def make_chart(df: pd.DataFrame, chart_type: str = "bar_h", title: str = "") -> go.Figure | None:
     """Create a plotly chart from a DataFrame."""
     if chart_type not in ("heatmap", "line"):
         df = cap_rows(df)
